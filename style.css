@@ -12,6 +12,9 @@
 
 * { box-sizing: border-box; }
 
+/* hidden 이 붙은 것은 언제나 숨긴다 */
+[hidden] { display: none !important; }
+
 body {
   margin: 0;
   background: var(--bg);
@@ -446,6 +449,18 @@ body {
 .gb-nick { font-weight: 700; }
 .gb-date { color: var(--gray); font-size: 13px; }
 .gb-msg  { margin: 0; color: #374151; white-space: pre-wrap; word-break: break-word; }
+
+/* ===== 맨 아래 작은 관리자 링크 ===== */
+.footer {
+  margin-top: 24px;
+  text-align: center;
+}
+.footer a {
+  color: #9ca3af;
+  font-size: 12px;
+  text-decoration: none;
+}
+.footer a:hover { color: var(--blue); }
 
 /* ===== 화면 폭에 따라 ===== */
 @media (max-width: 1100px) {

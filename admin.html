@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>관리자</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    /* ===== 관리자 화면에만 쓰는 모양 ===== */
+    .admin .sheet { display: block; padding: 40px 48px; margin-bottom: 24px; }
+    .admin-top {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 16px; flex-wrap: wrap; margin-bottom: 24px;
+    }
+    .admin-top .big-title { margin: 0; }
+    .admin-who { color: var(--gray); font-size: 14px; }
+    .sub-title { margin: 0 0 20px; font-size: 22px; font-weight: 800; }
+
+    .login { max-width: 440px; margin: 40px auto; }
+
+    .form { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; }
+    .form-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+    .field { display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; min-width: 0; }
+    .field.wide { grid-column: 1 / -1; }
+    .field > span { font-size: 13px; font-weight: 700; color: #374151; }
+    .field input, .field textarea {
+      padding: 11px 13px; border: 1px solid var(--line); border-radius: 12px;
+      font: inherit; font-size: 15px; min-width: 0; background: var(--white);
+    }
+    .field textarea { min-height: 84px; resize: vertical; }
+    .field input:focus, .field textarea:focus { outline: 2px solid var(--blue); outline-offset: -1px; }
+    .hint { color: var(--gray); font-size: 12px; }
+
+    .file-box {
+      display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+      padding: 12px; border: 1px dashed var(--line); border-radius: 12px;
+    }
+    .file-box .preview {
+      width: 72px; height: 72px; border-radius: 12px; background: var(--placeholder);
+      overflow: hidden; flex: 0 0 auto;
+    }
+    .file-box .preview img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .file-box a { color: var(--blue); font-size: 14px; word-break: break-all; }
+    .file-box input[type="file"] { font-size: 14px; max-width: 100%; min-width: 0; }
+
+    .row-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    .btn-line {
+      padding: 8px 14px; border: 1px solid var(--line); border-radius: 10px;
+      background: var(--white); color: var(--text); font: inherit; font-size: 14px; cursor: pointer;
+      text-decoration: none;
+    }
+    .btn-line:hover { border-color: var(--blue); color: var(--blue); }
+    .btn-line:disabled { opacity: 0.4; cursor: default; }
+    .btn-danger { color: #dc2626; }
+    .btn-danger:hover { border-color: #dc2626; color: #dc2626; }
+
+    .msg { min-height: 1.5em; margin: 0; font-size: 14px; color: var(--gray); }
+    .msg.ok { color: #16a34a; }
+    .msg.error { color: #dc2626; }
+
+    .admin-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+    .admin-item {
+      display: grid; grid-template-columns: 64px 1fr auto; gap: 14px; align-items: center;
+      padding: 12px 14px; border: 1px solid var(--line); border-radius: 14px;
+    }
+    .admin-item.editing { border-color: var(--blue); background: var(--blue-soft); }
+    .thumb { width: 64px; height: 44px; border-radius: 8px; background: var(--placeholder); overflow: hidden; }
+    .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .item-meta { color: var(--blue); font-size: 12px; font-weight: 700; }
+    .item-title { font-weight: 800; }
+    .item-sub { color: var(--gray); font-size: 13px; }
+
+    .gb-admin-item { grid-template-columns: 1fr auto; }
+
+    .editor { margin-bottom: 24px; padding: 20px; border: 1px solid var(--line); border-radius: 18px; }
+
+    @media (max-width: 600px) {
+      .admin .sheet { padding: 28px 20px; }
+      .form-grid { grid-template-columns: minmax(0, 1fr); }
+      .editor { padding: 14px; }
+      .admin-item { grid-template-columns: 1fr; }
+      .thumb { width: 100%; height: 120px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page admin">
+
+    <!-- 로그인 화면 -->
+    <section class="sheet login" id="login-view" hidden>
+      <h1 class="big-title">ADMIN</h1>
+      <p class="intro">관리자 이메일과 비밀번호로 로그인하세요.</p>
+      <div class="form">
+        <label class="field"><span>이메일</span>
+          <input id="login-email" type="email" autocomplete="username">
+        </label>
+        <label class="field"><span>비밀번호</span>
+          <input id="login-password" type="password" autocomplete="current-password">
+        </label>
+        <button type="button" class="btn" id="login-btn">로그인</button>
+        <p class="msg" id="login-msg"></p>
+      </div>
+    </section>
+
+    <!-- 관리자가 아닐 때 -->
+    <section class="sheet login" id="denied-view" hidden>
+      <h1 class="big-title">ADMIN</h1>
+      <p class="intro">관리자만 쓸 수 있어요.</p>
+      <p class="admin-who" id="denied-who"></p>
+      <button type="button" class="btn" data-logout>로그아웃</button>
+    </section>
+
+    <!-- 관리자 화면 -->
+    <div id="admin-view" hidden>
+      <section class="sheet">
+        <div class="admin-top">
+          <h1 class="big-title">ADMIN</h1>
+          <div class="row-actions">
+            <span class="admin-who" id="admin-who"></span>
+            <a class="btn-line" href="index.html" target="_blank" rel="noopener">방문자 화면 보기</a>
+            <button type="button" class="btn-line" data-logout>로그아웃</button>
+          </div>
+        </div>
+        <p class="intro">여기서 바꾼 내용은 방문자 화면을 새로고침하면 바로 보여요.</p>
+      </section>
+
+      <!-- 프로필 -->
+      <section class="sheet">
+        <h2 class="sub-title">프로필</h2>
+        <div class="form">
+          <div class="field">
+            <span>프로필 사진</span>
+            <div class="file-box">
+              <div class="preview" id="photo-preview"></div>
+              <input type="file" id="photo-file" accept="image/png,image/jpeg,image/webp,image/gif">
+              <button type="button" class="btn-line btn-danger" id="photo-remove">사진 빼기</button>
+            </div>
+            <span class="hint">이미지(png, jpg, webp, gif) · 10MB까지. 고르면 저장할 때 올라가요.</span>
+          </div>
+          <div class="form-grid" id="profile-fields"></div>
+          <div class="row-actions">
+            <button type="button" class="btn" id="profile-save">프로필 저장</button>
+            <p class="msg" id="profile-msg"></p>
+          </div>
+        </div>
+      </section>
+
+      <!-- 포트폴리오 카드 -->
+      <section class="sheet">
+        <h2 class="sub-title">포트폴리오 카드</h2>
+
+        <div class="editor">
+          <h3 class="sub-title" id="editor-title">새 카드 추가</h3>
+          <div class="form">
+            <div class="form-grid">
+              <label class="field"><span>번호</span><input id="p-number" type="text" placeholder="01"></label>
+              <label class="field"><span>분류</span><input id="p-category" type="text"></label>
+              <label class="field wide"><span>제목 (꼭 적기)</span><input id="p-title" type="text"></label>
+              <label class="field wide"><span>설명</span><textarea id="p-description"></textarea></label>
+              <label class="field wide"><span>태그 (쉼표로 나누기)</span><input id="p-tags" type="text" placeholder="UI/UX 리드 기획, 총괄 PM"></label>
+            </div>
+
+            <div class="field">
+              <span>썸네일 이미지</span>
+              <div class="file-box">
+                <div class="preview" id="thumb-preview"></div>
+                <input type="file" id="thumb-file" accept="image/png,image/jpeg,image/webp,image/gif">
+                <button type="button" class="btn-line btn-danger" id="thumb-remove">썸네일 빼기</button>
+              </div>
+              <span class="hint">이미지(png, jpg, webp, gif) · 10MB까지</span>
+            </div>
+
+            <div class="field">
+              <span>첨부 파일</span>
+              <div class="file-box">
+                <span id="attach-current" class="hint">없음</span>
+                <input type="file" id="attach-file" accept="application/pdf,image/png,image/jpeg,image/webp,image/gif">
+                <button type="button" class="btn-line btn-danger" id="attach-remove">첨부 빼기</button>
+              </div>
+              <span class="hint">PDF 또는 이미지 · 10MB까지. 방문자가 카드를 누르면 이 파일이 열려요.</span>
+            </div>
+
+            <div class="row-actions">
+              <button type="button" class="btn" id="p-save">카드 추가</button>
+              <button type="button" class="btn-line" id="p-cancel" hidden>수정 취소</button>
+              <p class="msg" id="p-msg"></p>
+            </div>
+          </div>
+        </div>
+
+        <ul class="admin-list" id="project-list"></ul>
+      </section>
+
+      <!-- 좋아요 -->
+      <section class="sheet">
+        <h2 class="sub-title">좋아요</h2>
+        <ul class="admin-list" id="like-list"></ul>
+        <p class="msg" id="like-msg"></p>
+      </section>
+
+      <!-- 방명록 -->
+      <section class="sheet">
+        <h2 class="sub-title">방명록</h2>
+        <p class="msg" id="gb-admin-msg"></p>
+        <ul class="admin-list" id="gb-admin-list"></ul>
+      </section>
+    </div>
+  </main>
+
+  <script src="admin.js"></script>
+</body>
+</html>
